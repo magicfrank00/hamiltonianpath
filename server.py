@@ -1,84 +1,35 @@
-import json
-from utils import (
-    open_graph,
-    permute_graph,
-    hash_committed_graph,
-    test_cycle,
-    is_valid_graph,
-    check_permutation,
-    numrounds,
-)
+from flask import Flask, request, jsonify
+
+from hamiltonian_cycle.server import HamiltonianCycleTester
+
+app = Flask(__name__)
 
 
-class HamiltonianCycleTester:
-    def __init__(self, G):
-        self.G = G
-        assert len(G) == len(G[0])
-        self.N = len(G)
-        self.FS_state = b""
-        self.A_vals = []
-        self.z_vals = []
-        self.current_round = 0
+@app.route("/verify", methods=["POST"])
+def verify():
+    data = request.get_json()
 
-    def loadProof(self, A, z, round_n):
-        """<Loads the proof for a specific round."""
-        if round_n != self.current_round:
-            raise ValueError(
-                f"Round {round_n} is out of sequence. Current round is {self.current_round}."
-            )
+    if not data or "graph" not in data or "proofs" not in data:
+        return jsonify({"error": "No valid data provided"}), 400
 
-        is_valid_graph(A, self.N)
+    G = data["graph"]
+    proofs = data["proofs"]
 
-        self.A_vals.append(A)
-        self.z_vals.append(z)
+    try:
+        tester = HamiltonianCycleTester(G)
 
-        self.current_round += 1
+        for i, proof in enumerate(proofs):
+            A = proof["A"]
+            z = proof["z"]
+            tester.loadProof(A, z, i)
+        tester.prove_hamiltonian_cycle()
+        return (
+            jsonify({"status": "success", "message": "Hamiltonian cycle is verified"}),
+            200,
+        )
+    except Exception as e:
+        return jsonify({"status": "fail", "message": str(e)}), 400
 
-    def prove_hamiltonian_cycle(self):
-        print(f"prove to me that G has a hamiltonian cycle!")
-        if self.current_round != numrounds:
-            raise ValueError(
-                f"Expected {numrounds} rounds, but only received {self.current_round}."
-            )
 
-        assert len(self.A_vals) == numrounds
-
-        self.compute_fiat_shamir_challenge()
-
-        for i in range(numrounds):
-            print(f"checking round {i}")
-            challenge = int(self.challenge_bits[i])
-            print(f"challenge bit is {challenge}")
-            A = self.A_vals[i]
-            z = self.z_vals[i]
-
-            if challenge:
-                self.verify_cycle(A, z)
-            else:
-                self.verify_permutation(A, z)
-
-        print("you've convinced me it has a hamiltonian path! Cool!")
-
-    def compute_fiat_shamir_challenge(self):
-        print("computing fiat shamir challenge")
-        for i in range(numrounds):
-            self.FS_state = hash_committed_graph(self.A_vals[i], self.FS_state)
-
-        self.challenge_bits = bin(int.from_bytes(self.FS_state, "big"))[-numrounds:]
-
-    def verify_cycle(self, A, z):
-        cycle, openings = z
-        if not test_cycle(A, self.N, cycle, openings):
-            raise Exception("your proof didn't verify :(")
-        else:
-            print("accepted")
-
-    def verify_permutation(self, A, z):
-        permutation, openings = z
-        check_permutation(permutation, self.N)
-        G_permuted = open_graph(A, self.N, openings)
-        G_test = permute_graph(self.G, self.N, permutation)
-        if G_permuted == G_test:
-            print("accepted")
-        else:
-            raise Exception("your proof didn't verify :(")
+if __name__ == "__main__":
+    app.run(debug=True)
