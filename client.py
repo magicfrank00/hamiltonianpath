@@ -1,5 +1,6 @@
 import json
 import random
+from server import HamiltonianCycleTester
 from utils import (
     commit_to_graph,
     open_graph,
@@ -8,7 +9,6 @@ from utils import (
     numrounds,
     remove_extra_commitments,
 )
-from pwn import process
 
 
 class HamiltonianCycleProver:
@@ -72,20 +72,9 @@ class HamiltonianCycleProver:
                 openings = permute_graph(openings, self.N, permutation)
                 z = [permutation, openings]
 
-            proofs.append(json.dumps({"A": A, "z": z}))
+            proofs.append({"A": A, "z": z})
 
         return proofs
-
-    def send_proofs(self, server_script="server.py"):
-        """Send proofs to the server and interact with it."""
-        rem = process(["python3", server_script])
-        proofs = self.generate_proofs(numrounds)
-
-        for proof in proofs:
-            rem.recvuntil(b"send fiat shamir proof: ")
-            rem.sendline(proof)
-
-        rem.interactive()
 
 
 if __name__ == "__main__":
@@ -99,4 +88,11 @@ if __name__ == "__main__":
         [1, 0, 1, 1, 0],
     ]
     prover = HamiltonianCycleProver(N, G, cycle)
-    prover.send_proofs()
+    tester = HamiltonianCycleTester(G)
+    proofs = prover.generate_proofs(numrounds)
+
+    for i, proof in enumerate(proofs):
+        A = proof["A"]
+        z = proof["z"]
+        tester.loadProof(A, z, i)
+    tester.prove_hamiltonian_cycle()

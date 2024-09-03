@@ -4,31 +4,44 @@ from utils import (
     permute_graph,
     hash_committed_graph,
     test_cycle,
-    check_graph,
+    is_valid_graph,
     check_permutation,
     numrounds,
 )
 
 
 class HamiltonianCycleTester:
-    def __init__(self, N, G):
-        self.N = N
+    def __init__(self, G):
         self.G = G
+        assert len(G) == len(G[0])
+        self.N = len(G)
         self.FS_state = b""
         self.A_vals = []
         self.z_vals = []
+        self.current_round = 0
+
+    def loadProof(self, A, z, round_n):
+        """<Loads the proof for a specific round."""
+        if round_n != self.current_round:
+            raise ValueError(
+                f"Round {round_n} is out of sequence. Current round is {self.current_round}."
+            )
+
+        is_valid_graph(A, self.N)
+
+        self.A_vals.append(A)
+        self.z_vals.append(z)
+
+        self.current_round += 1
 
     def prove_hamiltonian_cycle(self):
         print(f"prove to me that G has a hamiltonian cycle!")
-        for i in range(numrounds):
-            payload = json.loads(input(b"send fiat shamir proof: "))
-            A = payload["A"]
-            z = payload["z"]
+        if self.current_round != numrounds:
+            raise ValueError(
+                f"Expected {numrounds} rounds, but only received {self.current_round}."
+            )
 
-            check_graph(A, self.N)
-
-            self.A_vals.append(A)
-            self.z_vals.append(z)
+        assert len(self.A_vals) == numrounds
 
         self.compute_fiat_shamir_challenge()
 
@@ -56,8 +69,7 @@ class HamiltonianCycleTester:
     def verify_cycle(self, A, z):
         cycle, openings = z
         if not test_cycle(A, self.N, cycle, openings):
-            print("your proof didn't verify :(")
-            exit()
+            raise Exception("your proof didn't verify :(")
         else:
             print("accepted")
 
@@ -69,18 +81,4 @@ class HamiltonianCycleTester:
         if G_permuted == G_test:
             print("accepted")
         else:
-            print("your proof didn't verify :(")
-            exit()
-
-
-if __name__ == "__main__":
-    N = 5
-    G = [
-        [0, 1, 1, 0, 1],
-        [1, 0, 0, 0, 0],
-        [0, 0, 0, 1, 0],
-        [0, 1, 1, 0, 0],
-        [1, 0, 1, 1, 0],
-    ]
-    proof = HamiltonianCycleProof(N, G)
-    proof.prove_hamiltonian_cycle()
+            raise Exception("your proof didn't verify :(")
