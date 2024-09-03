@@ -1,7 +1,8 @@
 import random
 from math import isqrt
 
-def generate_hamiltonian_graph(N):
+
+def generate_hamiltonian_graph_helper(N):
     # Step 1: Create an empty adjacency matrix
     adjacency_matrix = [[0 for _ in range(N)] for _ in range(N)]
 
@@ -12,11 +13,11 @@ def generate_hamiltonian_graph(N):
         adjacency_matrix[cycle[i]][cycle[next_node]] = 1
 
     # Step 3: Add random edges to the graph
-    num_random_edges = isqrt(random.randint(N, N*(N-1)//2 - N))
+    num_random_edges = isqrt(random.randint(N, N * (N - 1) // 2 - N))
     edges_added = 0
     while edges_added < num_random_edges:
-        u = random.randint(0, N-1)
-        v = random.randint(0, N-1)
+        u = random.randint(0, N - 1)
+        v = random.randint(0, N - 1)
         if u != v and adjacency_matrix[u][v] == 0:
             adjacency_matrix[u][v] = 1
             edges_added += 1
@@ -24,26 +25,37 @@ def generate_hamiltonian_graph(N):
     # Step 4: Permute the graph
     permutation = list(range(N))
     random.shuffle(permutation)
-    
+
     permuted_adjacency_matrix = [[0 for _ in range(N)] for _ in range(N)]
     for i in range(N):
         for j in range(N):
-            permuted_adjacency_matrix[permutation[i]][permutation[j]] = adjacency_matrix[i][j]
-    
-    # Permute the cycle
+            permuted_adjacency_matrix[permutation[i]][permutation[j]] = (
+                adjacency_matrix[i][j]
+            )
+
     permuted_cycle = [permutation[i] for i in cycle]
 
     return permuted_adjacency_matrix, permuted_cycle
 
-# Example usage
-N = 30
-adj_matrix, hamiltonian_cycle = generate_hamiltonian_graph(N)
 
-# Display the adjacency matrix
-print("Adjacency Matrix:")
-for row in adj_matrix:
-    print(row)
+def generate_hamiltonian_graph(N):
+    adj_matrix, hamiltonian_cycle = generate_hamiltonian_graph_helper(N)
 
-# Display the Hamiltonian cycle
-print("\nHamiltonian Cycle:")
-print(hamiltonian_cycle)
+    print("Adjacency Matrix:")
+    for row in adj_matrix:
+        print(row)
+
+    print("\nHamiltonian Cycle:")
+    print(hamiltonian_cycle)
+
+    hamiltonian_cycle_tuples = [
+        (hamiltonian_cycle[i], hamiltonian_cycle[(i + 1) % N]) for i in range(N)
+    ]
+    print(hamiltonian_cycle_tuples)
+
+    return adj_matrix, hamiltonian_cycle_tuples
+
+
+if __name__ == "__main__":
+    N = 30
+    generate_hamiltonian_graph(N)
