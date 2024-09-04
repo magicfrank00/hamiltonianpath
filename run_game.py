@@ -9,9 +9,8 @@ def send_victory(path):
 
 
 if __name__ == "__main__":
-    grid_size = 10
-    steps_range = (5, 15)  # Number of colored cells range
+    grid_size = 7
 
-    grid, entity_position, entity_direction = generate_map(grid_size, steps_range)
-    game = GridGame(send_victory, grid, entity_position, entity_direction)
+    grid, entity_position, solution = generate_map(grid_size)
+    game = GridGame(send_victory, grid, entity_position, 'north', solution)
     game.run()
