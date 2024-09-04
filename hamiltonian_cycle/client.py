@@ -60,10 +60,8 @@ class HamiltonianCycleProver:
 
             if challenge:
                 print("Challenge bit is 1")
-                
-                permuted_path = [
-                    permutation.index(node) for node in self.path
-                ]
+
+                permuted_path = [permutation.index(node) for node in self.path]
                 openings = remove_extra_commitments(openings, self.N, self.path)
                 openings = permute_graph(openings, self.N, permutation)
                 z = [permuted_path, openings]

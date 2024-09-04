@@ -1,5 +1,6 @@
 import argparse
 from flask import Flask, jsonify, request
+from cons import GRID_SIZE, PORTS
 from game.game import GridGame
 from game.reduction_to_graph import grid_to_adjacency_matrix
 from hamiltonian_cycle.client import HamiltonianCycleProver
@@ -8,10 +9,10 @@ from threading import Thread
 import requests
 
 from hamiltonian_cycle.utils import NUM_ROUNDS
+from start_match_util import start_game_all
 
 app = Flask(__name__)
 port = None
-ports = [5000, 5001, 5002]
 
 
 def send_victory(grid, path):
@@ -30,7 +31,7 @@ def send_victory(grid, path):
     proofs = prover.generate_proofs(NUM_ROUNDS)
 
     data = {"graph": adj_matrix, "proofs": proofs, "player": port}
-    for p in ports:
+    for p in PORTS:
         if p == port:
             continue
         print(f"Sending to {p}")
@@ -40,7 +41,18 @@ def send_victory(grid, path):
             print("Status Code:", response.status_code)
             print("Response JSON:", response.json())
         except Exception as e:
+            if "Connection refused" in str(e):
+                print("Player not running")
+                continue
             print(f"Failed to send to {p}: {e}")
+
+
+def send_victory_thread(grid, path):
+    thread = Thread(
+        target=send_victory,
+        args=(grid, path),
+    )
+    thread.start()
 
 
 @app.route("/verify", methods=["POST"])
@@ -83,7 +95,7 @@ def start():
     position = data["position"]
 
     try:
-        game = GridGame(send_victory, grid, position, "north", None)
+        game = GridGame(send_victory_thread, grid, position, "north", None)
 
         thread = Thread(
             target=game.run,
@@ -91,7 +103,25 @@ def start():
         thread.start()
 
         return (
-            jsonify({"status": "success", "message": "Hamiltonian cycle is verified"}),
+            jsonify({"status": "success", "message": "Starting player" + port}),
+            200,
+        )
+    except Exception as e:
+        return jsonify({"status": "fail", "message": str(e)}), 400
+
+
+@app.route("/match", methods=["GET"])
+def match():
+    print("Generating a match")
+    try:
+        thread = Thread(
+            target=start_game_all,
+            args=(GRID_SIZE,),
+        )
+        thread.start()
+
+        return (
+            jsonify({"status": "success", "message": "Starting match"}),
             200,
         )
     except Exception as e:
@@ -100,7 +130,8 @@ def start():
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--port", help="Port to use for the server", default="5000")
+    parser.add_argument("--p", help="Player 0,1,2", default="0")
     args = parser.parse_args()
-    port = int(args.port)
+    player = args.p
+    port = PORTS[int(player)]
     app.run(debug=True, port=port)
