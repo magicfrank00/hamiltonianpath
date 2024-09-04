@@ -1,5 +1,6 @@
 import pygame
 import random
+import copy
 
 
 class GridGame:
@@ -14,6 +15,7 @@ class GridGame:
         pygame.init()
         self.width = 1200
         self.height = 1200
+        self.input_data = (grid, entity_position, entity_direction)
         assert len(grid) == len(grid[0])
         self.grid_size = len(grid)
         self.cell_size = self.width // self.grid_size
@@ -25,52 +27,25 @@ class GridGame:
         self.send_victory_callback = send_victory_callback
         self.user_cells = []
 
-        self.grid = grid
-        self.entity_position = entity_position
-        self.entity_direction = entity_direction
+        self.grid = copy.deepcopy(grid)
+        self.entity_position = copy.deepcopy(entity_position)
+        self.entity_direction = copy.deepcopy(entity_direction)
 
         self.entity_color = (255, 255, 255)  # White color for the arrow
         self.tick_count = 0
 
     def restart_game(self):
-        self.grid = [
-            [None for _ in range(self.grid_size)] for _ in range(self.grid_size)
-        ]
         self.color = self.get_random_color()
         self.entity_color = (255, 255, 255)  # White color for the arrow
-        self.entity_position, self.entity_direction = self.initialize_entity()
-        self.setup_grid()
         self.tick_count = 0
         self.game_over = False
+        self.user_cells = []
+        self.grid, self.entity_position, self.entity_direction = copy.deepcopy(
+            self.input_data
+        )
 
     def get_random_color(self):
         return (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
-
-    def setup_grid(self):
-        start_x, start_y = self.grid_size // 2, self.grid_size // 2
-        queue = [(start_x, start_y)]
-        steps = random.randint(1, 3)
-
-        while queue and steps > 0:
-            x, y = queue.pop(0)
-            if self.grid[y][x] is None:
-                self.grid[y][x] = self.color
-                steps -= 1
-                for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
-                    nx, ny = x + dx, y + dy
-                    if (
-                        0 <= nx < self.grid_size
-                        and 0 <= ny < self.grid_size
-                        and self.grid[ny][nx] is None
-                    ):
-                        queue.append((nx, ny))
-                        random.shuffle(queue)
-
-    def initialize_entity(self):
-        start_x, start_y = self.grid_size // 2, self.grid_size // 2
-        position = (start_x, start_y)
-        direction = random.choice(["north", "south", "east", "west"])
-        return position, direction
 
     def draw_arrow(self, position, direction):
         x, y = position
