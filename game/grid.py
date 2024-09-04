@@ -36,7 +36,7 @@ def generate_map(grid_size):
         return False
 
     # Generate the path
-    while len(path) < grid_size * grid_size * 0.6:  # Fill roughly 60% of the grid
+    while len(path) < grid_size * grid_size * 0.3:  # Fill roughly 60% of the grid
         x, y = current_position
         random.shuffle(directions)
 

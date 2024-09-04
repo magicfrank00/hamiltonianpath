@@ -19,7 +19,7 @@ class GridGame:
         self.height = 1200
         self.input_data = (
             grid,
-            entity_position,
+            tuple(entity_position),
             entity_direction,
             solution_path,
         )  # Store solution path
@@ -36,7 +36,7 @@ class GridGame:
         self.autoplay = False  # Control variable for autoplay
 
         self.grid = copy.deepcopy(grid)
-        self.entity_position = copy.deepcopy(entity_position)
+        self.entity_position = copy.deepcopy(tuple(entity_position))
         self.entity_direction = copy.deepcopy(entity_direction)
         self.solution_path = copy.deepcopy(solution_path)  # Store the solution path
 
@@ -44,7 +44,7 @@ class GridGame:
 
         self.entity_color = (255, 255, 255)  # White color for the arrow
         self.tick_count = 0
-        self.moves_done = [(entity_position)]
+        self.moves_done = [self.entity_position]
 
         self.font = pygame.font.Font(None, 36)
         # Define buttons with improved graphics
@@ -154,6 +154,8 @@ class GridGame:
         pygame.draw.polygon(self.screen, self.entity_color, directions[direction][0])
 
     def update_entity_position(self):
+        if self.game_over:
+            return
         dx, dy = 0, 0
         if self.entity_direction == "north":
             dy = -1
@@ -209,7 +211,7 @@ class GridGame:
                             self.cell_size - self.border_size * 2,
                         ),
                     )
-                if (col, row) == self.entity_position:
+                if col == self.entity_position[0] and row == self.entity_position[1]:
                     self.draw_arrow((col, row), self.entity_direction)
 
         self.draw_buttons()
@@ -287,7 +289,7 @@ class GridGame:
     def run(self):
         running = True
         clock = pygame.time.Clock()
-
+        self.draw_grid()
         while running:
             self.handle_input()
             self.draw_grid()
@@ -301,7 +303,9 @@ class GridGame:
                     self.display_victory()
                     if not self.won:
                         self.won = True
-                        self.send_victory_callback(self.moves_done[:-1])
+                        self.send_victory_callback(
+                            copy.deepcopy(self.input_data[0]), self.moves_done[:-1]
+                        )
                 else:
                     self.display_game_over()
 

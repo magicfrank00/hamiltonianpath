@@ -1,6 +1,6 @@
 from game.game import GridGame
 from game.grid import generate_map
-from reduction_to_graph import grid_to_adjacency_matrix
+from game.reduction_to_graph import grid_to_adjacency_matrix
 
 
 def send_victory(path):

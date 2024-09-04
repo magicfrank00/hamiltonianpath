@@ -30,19 +30,30 @@ def grid_to_adjacency_matrix(grid, path):
     return adj_matrix, graph_path
 
 
-# Example usage
-grid = [
-    [None, (247, 108, 120), (247, 108, 120), (247, 108, 120)],
-    [None, (247, 108, 120), (247, 108, 120), (247, 108, 120)],
-    [None, None, (247, 108, 120), (247, 108, 120)],
-    [None, None, (247, 108, 120), (247, 108, 120)],
-]
+if __name__ == "__main__":
+    grid = [
+        [None, [247, 108, 120], (247, 108, 120), (247, 108, 120)],
+        [None, (247, 108, 120), (247, 108, 120), (247, 108, 120)],
+        [None, None, (247, 108, 120), (247, 108, 120)],
+        [None, None, (247, 108, 120), (247, 108, 120)],
+    ]
 
-path = [(3, 0), (2, 0), (1, 0), (1, 1), (2, 1), (3, 1), (3, 2), (3, 3), (2, 3), (2, 2)]
+    path = [
+        (3, 0),
+        (2, 0),
+        (1, 0),
+        (1, 1),
+        (2, 1),
+        (3, 1),
+        (3, 2),
+        (3, 3),
+        (2, 3),
+        (2, 2),
+    ]
 
-adj_matrix, graph_path = grid_to_adjacency_matrix(grid, path)
+    adj_matrix, graph_path = grid_to_adjacency_matrix(grid, path)
 
-print("Adjacency Matrix:")
-for row in adj_matrix:
-    print(row)
-print("Mapped Graph Path (node indices):", graph_path)
+    print("Adjacency Matrix:")
+    for row in adj_matrix:
+        print(row)
+    print("Mapped Graph Path (node indices):", graph_path)
