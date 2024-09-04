@@ -39,6 +39,7 @@ class GridGame:
 
         self.entity_color = (255, 255, 255)  # White color for the arrow
         self.tick_count = 0
+        self.moves_done = []
 
         self.font = pygame.font.Font(None, 36)
         # Define buttons with improved graphics
@@ -63,7 +64,7 @@ class GridGame:
             self.input_data
         )
         self.history = []  # Reset the undo history
-
+        
     def set_checkpoint(self):
         # Save the checkpoint (current grid and entity position)
         self.checkpoint_position = copy.deepcopy(self.entity_position)
@@ -79,6 +80,8 @@ class GridGame:
         if self.history:
             # Pop the last move from history and restore the state
             self.grid, self.entity_position = self.history.pop()
+        if self.moves_done:
+            self.moves_done.pop()
 
     def get_random_color(self):
         return (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
@@ -140,6 +143,8 @@ class GridGame:
             if self.grid[new_y][new_x] is None:
                 self.game_over = True
             else:
+                self.moves_done.append(self.entity_direction)
+                print(self.moves_done)
                 # Save the current state before moving (for undo)
                 self.history.append((copy.deepcopy(self.grid), copy.deepcopy(self.entity_position)))
 
@@ -189,11 +194,9 @@ class GridGame:
         pygame.display.flip()
 
     def check_victory(self):
-        for row in self.grid:
-            if any(cell is not None for cell in row):  # Check if any cell is not empty
-                return False
-        return True
-
+        print('called')
+        return len(self.moves_done) == len(self.solution_path)-1
+    
     def display_victory(self):
         font = pygame.font.Font(None, 72)
         text = font.render("Victory! Press R to restart", True, (0, 255, 0))
@@ -263,6 +266,7 @@ class GridGame:
                     self.send_victory_callback(self.user_cells)
                 else:
                     self.display_game_over()
+                    
 
             clock.tick(60)
 
