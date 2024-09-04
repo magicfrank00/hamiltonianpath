@@ -1,6 +1,7 @@
 import pygame
 import random
 import copy
+from game.button import Button
 
 class GridGame:
     def __init__(
@@ -38,6 +39,17 @@ class GridGame:
 
         self.entity_color = (255, 255, 255)  # White color for the arrow
         self.tick_count = 0
+
+        self.font = pygame.font.Font(None, 36)
+        # Define buttons with improved graphics
+        self.buttons = [
+            Button(rect=(50, self.height - 100, 150, 50), color=(255, 0, 0),
+                   hover_color=(200, 0, 0), text="Undo", text_color=(255, 255, 255), font=self.font),
+            Button(rect=(250, self.height - 100, 150, 50), color=(0, 255, 0),
+                   hover_color=(0, 200, 0), text="Checkpoint", text_color=(255, 255, 255), font=self.font),
+            Button(rect=(450, self.height - 100, 200, 50), color=(0, 0, 255),
+                   hover_color=(0, 0, 200), text="Load Checkpoint", text_color=(255, 255, 255), font=self.font)
+        ]
 
     def restart_game(self):
         self.color = self.get_random_color()
@@ -142,6 +154,11 @@ class GridGame:
             self.entity_position = next_position
             self.autoplay_index += 1
 
+    def draw_buttons(self):
+        for button in self.buttons:
+            button.check_hover(pygame.mouse.get_pos())
+            button.draw(self.screen)
+
     def draw_grid(self):
         self.screen.fill((0, 0, 0))  # Clear the screen
         for row in range(self.grid_size):
@@ -160,6 +177,9 @@ class GridGame:
                     )
                 if (col, row) == self.entity_position:
                     self.draw_arrow((col, row), self.entity_direction)
+
+        # Draw the buttons
+        self.draw_buttons()
 
     def display_game_over(self):
         font = pygame.font.Font(None, 72)
@@ -182,6 +202,9 @@ class GridGame:
         pygame.display.flip()
 
     def handle_input(self):
+        mouse_pos = pygame.mouse.get_pos()
+        mouse_click = pygame.mouse.get_pressed()
+
         for event in pygame.event.get():
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_UP:
@@ -211,12 +234,22 @@ class GridGame:
                     self.autoplay = True
                     self.autoplay_index = 0  # Reset autoplay index
 
+            # Handle mouse clicks on buttons
+            if mouse_click[0]:  # Left mouse button click
+                for button in self.buttons:
+                    if button.check_click(mouse_pos):
+                        if button.text == "Undo":
+                            self.undo_move()
+                        elif button.text == "Checkpoint":
+                            self.set_checkpoint()
+                        elif button.text == "Load Checkpoint":
+                            self.load_checkpoint()
+
     def run(self):
         running = True
         clock = pygame.time.Clock()
 
         while running:
-
             self.handle_input()
 
             if not self.game_over:
