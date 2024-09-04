@@ -39,21 +39,16 @@ def generate_hamiltonian_graph_helper(N):
 
 
 def generate_hamiltonian_graph(N):
-    adj_matrix, hamiltonian_cycle = generate_hamiltonian_graph_helper(N)
+    adj_matrix, hamiltonian_path = generate_hamiltonian_graph_helper(N)
 
     print("Adjacency Matrix:")
     for row in adj_matrix:
         print(row)
 
     print("\nHamiltonian Cycle:")
-    print(hamiltonian_cycle)
+    print(hamiltonian_path)
 
-    hamiltonian_cycle_tuples = [
-        (hamiltonian_cycle[i], hamiltonian_cycle[(i + 1) % N]) for i in range(N)
-    ]
-    print(hamiltonian_cycle_tuples)
-
-    return adj_matrix, hamiltonian_cycle_tuples
+    return adj_matrix, hamiltonian_path
 
 
 if __name__ == "__main__":

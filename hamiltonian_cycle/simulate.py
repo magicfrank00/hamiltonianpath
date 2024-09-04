@@ -4,8 +4,8 @@ from .server import HamiltonianCycleTester
 from .utils import NUM_ROUNDS
 
 N = 5
-G, cycle = generate_hamiltonian_graph(N)
-prover = HamiltonianCycleProver(N, G, cycle)
+G, path = generate_hamiltonian_graph(N)
+prover = HamiltonianCycleProver(N, G, path)
 tester = HamiltonianCycleTester(G)
 proofs = prover.generate_proofs(NUM_ROUNDS)
 

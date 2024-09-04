@@ -3,7 +3,7 @@ from .utils import (
     open_graph,
     permute_graph,
     hash_committed_graph,
-    test_cycle,
+    test_path,
     is_valid_graph,
     check_permutation,
     NUM_ROUNDS,
@@ -68,7 +68,7 @@ class HamiltonianCycleTester:
 
     def verify_cycle(self, A, z):
         cycle, openings = z
-        if not test_cycle(A, self.N, cycle, openings):
+        if not test_path(A, self.N, cycle, openings):
             raise Exception("your proof didn't verify :(")
         else:
             print("accepted")

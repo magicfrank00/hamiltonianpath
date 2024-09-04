@@ -12,10 +12,10 @@ from .utils import (
 
 
 class HamiltonianCycleProver:
-    def __init__(self, N, G, cycle):
+    def __init__(self, N, G, path):
         self.N = N
         self.G = G
-        self.cycle = cycle
+        self.path = path
 
     def generate_permuted_graph(self):
         """Generate a permuted commitment of the graph G."""
@@ -60,13 +60,13 @@ class HamiltonianCycleProver:
 
             if challenge:
                 print("Challenge bit is 1")
-                permuted_cycle = [
-                    [permutation.index(x[0]), permutation.index(x[1])]
-                    for x in self.cycle
+                
+                permuted_path = [
+                    permutation.index(node) for node in self.path
                 ]
-                openings = remove_extra_commitments(openings, self.N, self.cycle)
+                openings = remove_extra_commitments(openings, self.N, self.path)
                 openings = permute_graph(openings, self.N, permutation)
-                z = [permuted_cycle, openings]
+                z = [permuted_path, openings]
             else:
                 print("Challenge bit is 0")
                 openings = permute_graph(openings, self.N, permutation)
@@ -79,7 +79,7 @@ class HamiltonianCycleProver:
 
 if __name__ == "__main__":
     N = 5
-    cycle = [(0, 4), (4, 2), (2, 3), (3, 1), (1, 0)]
+    path = [(0, 4), (4, 2), (2, 3), (3, 1)]
     G = [
         [0, 1, 1, 0, 1],
         [1, 0, 0, 0, 0],
@@ -87,7 +87,7 @@ if __name__ == "__main__":
         [0, 1, 1, 0, 0],
         [1, 0, 1, 1, 0],
     ]
-    prover = HamiltonianCycleProver(N, G, cycle)
+    prover = HamiltonianCycleProver(N, G, path)
     tester = HamiltonianCycleTester(G)
     proofs = prover.generate_proofs(NUM_ROUNDS)
 
