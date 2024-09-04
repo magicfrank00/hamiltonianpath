@@ -3,6 +3,7 @@ import random
 import copy
 from game.button import Button
 
+
 class GridGame:
     def __init__(
         self,
@@ -10,13 +11,18 @@ class GridGame:
         grid,
         entity_position,
         entity_direction,
-        solution_path,  # Solution path added here
+        solution_path=None,  # Solution path added here
         move_interval=30,
     ):
         pygame.init()
         self.width = 1200
         self.height = 1200
-        self.input_data = (grid, entity_position, entity_direction, solution_path)  # Store solution path
+        self.input_data = (
+            grid,
+            entity_position,
+            entity_direction,
+            solution_path,
+        )  # Store solution path
         assert len(grid) == len(grid[0])
         self.grid_size = len(grid)
         self.cell_size = self.width // self.grid_size
@@ -43,27 +49,46 @@ class GridGame:
         self.font = pygame.font.Font(None, 36)
         # Define buttons with improved graphics
         self.buttons = [
-            Button(rect=(50, self.height - 100, 150, 50), color=(255, 0, 0),
-                   hover_color=(200, 0, 0), text="Undo", text_color=(255, 255, 255), font=self.font),
-            Button(rect=(250, self.height - 100, 150, 50), color=(0, 255, 0),
-                   hover_color=(0, 200, 0), text="Checkpoint", text_color=(255, 255, 255), font=self.font),
-            Button(rect=(450, self.height - 100, 200, 50), color=(0, 0, 255),
-                   hover_color=(0, 0, 200), text="Load Checkpoint", text_color=(255, 255, 255), font=self.font)
+            Button(
+                rect=(50, self.height - 100, 150, 50),
+                color=(255, 0, 0),
+                hover_color=(200, 0, 0),
+                text="Undo",
+                text_color=(255, 255, 255),
+                font=self.font,
+            ),
+            Button(
+                rect=(250, self.height - 100, 150, 50),
+                color=(0, 255, 0),
+                hover_color=(0, 200, 0),
+                text="Checkpoint",
+                text_color=(255, 255, 255),
+                font=self.font,
+            ),
+            Button(
+                rect=(450, self.height - 100, 200, 50),
+                color=(0, 0, 255),
+                hover_color=(0, 0, 200),
+                text="Load Checkpoint",
+                text_color=(255, 255, 255),
+                font=self.font,
+            ),
         ]
+        self.won = False
 
     def restart_game(self):
         self.color = self.get_random_color()
-        self.entity_color = (255, 255, 255)  # White color for the arrow
+        self.entity_color = (255, 255, 255)
         self.tick_count = 0
         self.game_over = False
-        self.moves_done = self.moves_done[:1] # keep starting position for reduction
-        self.autoplay = False  # Disable autoplay on restart
+        self.moves_done = self.moves_done[:1]  # keep starting position for reduction
+        self.autoplay = False
         self.autoplay_index = 0  # Reset autoplay index
-        self.grid, self.entity_position, self.entity_direction, self.solution_path = copy.deepcopy(
-            self.input_data
+        self.grid, self.entity_position, self.entity_direction, self.solution_path = (
+            copy.deepcopy(self.input_data)
         )
-        self.history = []  # Reset the undo history
-        
+        self.history = []
+
     def set_checkpoint(self):
         # Save the checkpoint (current grid and entity position)
         self.checkpoint_position = copy.deepcopy(self.entity_position)
@@ -139,16 +164,18 @@ class GridGame:
         new_y = self.entity_position[1] + dy
 
         if 0 <= new_x < self.grid_size and 0 <= new_y < self.grid_size:
+            self.moves_done.append((new_x, new_y))
+            # print(self.moves_done)
+            # Save the current state before moving (for undo)
+            self.history.append(
+                (copy.deepcopy(self.grid), copy.deepcopy(self.entity_position))
+            )
+
+            self.grid[self.entity_position[1]][self.entity_position[0]] = None
+            self.entity_position = (new_x, new_y)
+
             if self.grid[new_y][new_x] is None:
                 self.game_over = True
-            else:
-                self.moves_done.append((new_x, new_y))
-                print(self.moves_done)
-                # Save the current state before moving (for undo)
-                self.history.append((copy.deepcopy(self.grid), copy.deepcopy(self.entity_position)))
-
-                self.grid[self.entity_position[1]][self.entity_position[0]] = None
-                self.entity_position = (new_x, new_y)
 
     def autoplay_solution(self):
         # Autoplay the solution path
@@ -181,7 +208,6 @@ class GridGame:
                 if (col, row) == self.entity_position:
                     self.draw_arrow((col, row), self.entity_direction)
 
-        # Draw the buttons
         self.draw_buttons()
 
     def display_game_over(self):
@@ -192,9 +218,11 @@ class GridGame:
         pygame.display.flip()
 
     def check_victory(self):
-        print('called')
-        return len(self.moves_done) == len(self.solution_path)
-    
+        for row in self.grid:
+            if any(cell is not None for cell in row):  # Check if any cell is not empty
+                return False
+        return True
+
     def display_victory(self):
         font = pygame.font.Font(None, 72)
         text = font.render("Victory! Press R to restart", True, (0, 255, 0))
@@ -207,19 +235,25 @@ class GridGame:
         mouse_click = pygame.mouse.get_pressed()
 
         for event in pygame.event.get():
+            if event.type == pygame.QUIT:  # Handle the QUIT event
+                pygame.quit()
+                exit()
+            if self.won:
+                continue
+
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_UP:
                     self.entity_direction = "north"
-                    self.update_entity_position()  # Move the entity
+                    self.update_entity_position()
                 elif event.key == pygame.K_DOWN:
                     self.entity_direction = "south"
-                    self.update_entity_position()  # Move the entity
+                    self.update_entity_position()
                 elif event.key == pygame.K_LEFT:
                     self.entity_direction = "west"
-                    self.update_entity_position()  # Move the entity
+                    self.update_entity_position()
                 elif event.key == pygame.K_RIGHT:
                     self.entity_direction = "east"
-                    self.update_entity_position()  # Move the entity
+                    self.update_entity_position()
                 elif event.key == pygame.K_r:
                     self.restart_game()
                 elif event.key == pygame.K_c:  # Save checkpoint
@@ -231,7 +265,7 @@ class GridGame:
                 elif event.key == pygame.K_q:  # Quit the game
                     pygame.quit()
                     exit()
-                elif event.key == pygame.K_s:  # Start autoplay
+                elif event.key == pygame.K_s and self.solution_path:  # Start autoplay
                     self.autoplay = True
                     self.autoplay_index = 0  # Reset autoplay index
 
@@ -252,19 +286,20 @@ class GridGame:
 
         while running:
             self.handle_input()
+            self.draw_grid()
 
             if not self.game_over:
                 if self.autoplay:
                     self.autoplay_solution()  # Autoplay the solution if enabled
-                self.draw_grid()
                 pygame.display.flip()
             else:
                 if self.check_victory():  # Display victory message if won
                     self.display_victory()
-                    self.send_victory_callback(self.moves_done)
+                    if not self.won:
+                        self.won = True
+                        self.send_victory_callback(self.moves_done)
                 else:
                     self.display_game_over()
-                    
 
             clock.tick(60)
 
