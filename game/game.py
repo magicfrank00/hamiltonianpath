@@ -38,7 +38,7 @@ class GridGame:
 
         self.entity_color = (255, 255, 255)  # White color for the arrow
         self.tick_count = 0
-        self.moves_done = []
+        self.moves_done = [(entity_position)]
 
         self.font = pygame.font.Font(None, 36)
         # Define buttons with improved graphics
@@ -56,7 +56,7 @@ class GridGame:
         self.entity_color = (255, 255, 255)  # White color for the arrow
         self.tick_count = 0
         self.game_over = False
-        self.moves_done = []
+        self.moves_done = self.moves_done[:1] # keep starting position for reduction
         self.autoplay = False  # Disable autoplay on restart
         self.autoplay_index = 0  # Reset autoplay index
         self.grid, self.entity_position, self.entity_direction, self.solution_path = copy.deepcopy(
@@ -79,7 +79,7 @@ class GridGame:
         if self.history:
             # Pop the last move from history and restore the state
             self.grid, self.entity_position = self.history.pop()
-        if self.moves_done:
+        if len(self.moves_done) > 1:
             self.moves_done.pop()
 
     def get_random_color(self):
@@ -143,6 +143,7 @@ class GridGame:
                 self.game_over = True
             else:
                 self.moves_done.append((new_x, new_y))
+                print(self.moves_done)
                 # Save the current state before moving (for undo)
                 self.history.append((copy.deepcopy(self.grid), copy.deepcopy(self.entity_position)))
 
@@ -192,7 +193,7 @@ class GridGame:
 
     def check_victory(self):
         print('called')
-        return len(self.moves_done) == len(self.solution_path)-1
+        return len(self.moves_done) == len(self.solution_path)
     
     def display_victory(self):
         font = pygame.font.Font(None, 72)
