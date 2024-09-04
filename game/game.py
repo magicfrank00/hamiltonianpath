@@ -26,7 +26,6 @@ class GridGame:
         self.move_interval = move_interval
         self.game_over = False
         self.send_victory_callback = send_victory_callback
-        self.user_cells = []
         self.history = []  # Stack to keep track of previous moves (for undo)
         self.autoplay = False  # Control variable for autoplay
 
@@ -57,7 +56,7 @@ class GridGame:
         self.entity_color = (255, 255, 255)  # White color for the arrow
         self.tick_count = 0
         self.game_over = False
-        self.user_cells = []
+        self.moves_done = []
         self.autoplay = False  # Disable autoplay on restart
         self.autoplay_index = 0  # Reset autoplay index
         self.grid, self.entity_position, self.entity_direction, self.solution_path = copy.deepcopy(
@@ -143,12 +142,10 @@ class GridGame:
             if self.grid[new_y][new_x] is None:
                 self.game_over = True
             else:
-                self.moves_done.append(self.entity_direction)
-                print(self.moves_done)
+                self.moves_done.append((new_x, new_y))
                 # Save the current state before moving (for undo)
                 self.history.append((copy.deepcopy(self.grid), copy.deepcopy(self.entity_position)))
 
-                self.user_cells.append((new_x, new_y))  # Add the new cell to user_cells
                 self.grid[self.entity_position[1]][self.entity_position[0]] = None
                 self.entity_position = (new_x, new_y)
 
@@ -263,7 +260,7 @@ class GridGame:
             else:
                 if self.check_victory():  # Display victory message if won
                     self.display_victory()
-                    self.send_victory_callback(self.user_cells)
+                    self.send_victory_callback(self.moves_done)
                 else:
                     self.display_game_over()
                     
