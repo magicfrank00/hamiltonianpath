@@ -75,6 +75,7 @@ class GridGame:
             ),
         ]
         self.won = False
+        self.set_checkpoint()
 
     def restart_game(self):
         self.color = self.get_random_color()
@@ -88,17 +89,20 @@ class GridGame:
             copy.deepcopy(self.input_data)
         )
         self.history = []
+        self.set_checkpoint()
 
     def set_checkpoint(self):
         # Save the checkpoint (current grid and entity position)
         self.checkpoint_position = copy.deepcopy(self.entity_position)
         self.checkpoint_grid = copy.deepcopy(self.grid)
+        self.checkpoint_moves = copy.deepcopy(self.moves_done)
 
     def load_checkpoint(self):
         # Load the checkpoint if it exists
         if self.checkpoint_position and self.checkpoint_grid:
             self.entity_position = copy.deepcopy(self.checkpoint_position)
             self.grid = copy.deepcopy(self.checkpoint_grid)
+            self.moves_done = copy.deepcopy(self.checkpoint_moves)
 
     def undo_move(self):
         if self.history:
@@ -297,7 +301,7 @@ class GridGame:
                     self.display_victory()
                     if not self.won:
                         self.won = True
-                        self.send_victory_callback(self.moves_done)
+                        self.send_victory_callback(self.moves_done[:-1])
                 else:
                     self.display_game_over()
 
