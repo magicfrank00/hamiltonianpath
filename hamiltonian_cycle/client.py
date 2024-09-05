@@ -1,5 +1,7 @@
+from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor, as_completed
 import json
 import random
+import time
 from .server import HamiltonianCycleTester
 from .utils import (
     commit_to_graph,
@@ -23,13 +25,14 @@ class HamiltonianCycleProver:
         permutation = random.sample(range(self.N), self.N)
         A_permuted = permute_graph(A, self.N, permutation)
 
-        # Sanity checks
-        assert self.G == open_graph(
-            A, self.N, openings
-        ), "Original graph failed to open."
-        assert permute_graph(self.G, self.N, permutation) == open_graph(
-            A_permuted, self.N, permute_graph(openings, self.N, permutation)
-        ), "Permuted graph failed to open."
+        # Sanity checks, expensive so sampling
+        if random.random() < 0.01:
+            assert self.G == open_graph(
+                A, self.N, openings
+            ), "Original graph failed to open."
+            assert permute_graph(self.G, self.N, permutation) == open_graph(
+                A_permuted, self.N, permute_graph(openings, self.N, permutation)
+            ), "Permuted graph failed to open."
 
         return A_permuted, openings, permutation
 
@@ -38,12 +41,16 @@ class HamiltonianCycleProver:
         FS_state = b""
         A_vars, opening_vars, permutation_vars = [], [], []
 
-        for i in range(num_rounds):
-            print(f"Generating graph {i}")
-            A_permuted, openings, permutation = self.generate_permuted_graph()
-            A_vars.append(A_permuted)
-            opening_vars.append(openings)
-            permutation_vars.append(permutation)
+        with ProcessPoolExecutor(max_workers=16) as executor:
+            futures = [
+                executor.submit(self.generate_permuted_graph) for _ in range(num_rounds)
+            ]
+            for i, future in enumerate(as_completed(futures)):
+                print(f"Graph {i} generated")
+                A_permuted, openings, permutation = future.result()
+                A_vars.append(A_permuted)
+                opening_vars.append(openings)
+                permutation_vars.append(permutation)
 
         # Generate Fiat-Shamir state
         for A_permuted in A_vars:
