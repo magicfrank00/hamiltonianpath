@@ -1,4 +1,5 @@
 import argparse
+import threading
 from flask import Flask, jsonify, request
 from cons import GRID_SIZE, PORTS
 from game.game import GridGame
@@ -13,6 +14,19 @@ from start_match_util import start_game_all
 
 app = Flask(__name__)
 port = None
+
+
+def send_request(p, data, url):
+    try:
+        response = requests.post(url, json=data)
+        print(f"Sending to {p}")
+        print("Status Code:", response.status_code)
+        print("Response JSON:", response.json())
+    except Exception as e:
+        if "Connection refused" in str(e):
+            print("Player not running")
+        else:
+            print(f"Failed to send to {p}: {e}")
 
 
 def send_victory(grid, path):
@@ -36,15 +50,8 @@ def send_victory(grid, path):
             continue
         print(f"Sending to {p}")
         url = f"http://127.0.0.1:{p}/verify"
-        try:
-            response = requests.post(url, json=data)
-            print("Status Code:", response.status_code)
-            print("Response JSON:", response.json())
-        except Exception as e:
-            if "Connection refused" in str(e):
-                print("Player not running")
-                continue
-            print(f"Failed to send to {p}: {e}")
+        thread = threading.Thread(target=send_request, args=(p, data, url))
+        thread.start()
 
 
 def send_victory_thread(grid, path):
