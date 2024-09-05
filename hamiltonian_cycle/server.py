@@ -1,4 +1,6 @@
+from concurrent.futures import ProcessPoolExecutor, as_completed
 import json
+import time
 from .utils import (
     open_graph,
     permute_graph,
@@ -34,6 +36,18 @@ class HamiltonianCycleTester:
 
         self.current_round += 1
 
+    def verify_round(self, i):
+        print(f"checking round {i}")
+        challenge = int(self.challenge_bits[i])
+        print(f"challenge bit is {challenge}")
+        A = self.A_vals[i]
+        z = self.z_vals[i]
+
+        if challenge:
+            return self.verify_cycle(A, z)
+        else:
+            return self.verify_permutation(A, z)
+
     def prove_hamiltonian_cycle(self):
         print(f"prove to me that G has a hamiltonian cycle!")
         if self.current_round != NUM_ROUNDS:
@@ -44,18 +58,17 @@ class HamiltonianCycleTester:
         assert len(self.A_vals) == NUM_ROUNDS
 
         self.compute_fiat_shamir_challenge()
+        with ProcessPoolExecutor() as executor:
+            futures = {
+                executor.submit(self.verify_round, i): i for i in range(NUM_ROUNDS)
+            }
 
-        for i in range(NUM_ROUNDS):
-            print(f"checking round {i}")
-            challenge = int(self.challenge_bits[i])
-            print(f"challenge bit is {challenge}")
-            A = self.A_vals[i]
-            z = self.z_vals[i]
-
-            if challenge:
-                self.verify_cycle(A, z)
-            else:
-                self.verify_permutation(A, z)
+            for future in as_completed(futures):
+                round_index = futures[future]
+                result = future.result()
+                print(
+                    f"Round {round_index} verification complete with result: {result}"
+                )
 
         print("you've convinced me it has a hamiltonian path! Cool!")
 
