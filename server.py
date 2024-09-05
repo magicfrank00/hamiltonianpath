@@ -12,8 +12,13 @@ import requests
 from hamiltonian_cycle.utils import NUM_ROUNDS
 from start_match_util import start_game_all
 
+from queue import Queue
+
+
 app = Flask(__name__)
 port = None
+
+event_queue = Queue()
 
 
 def send_request(p, data, url):
@@ -41,6 +46,7 @@ def send_victory(grid, path):
 
     N = len(adj_matrix)
 
+    event_queue.put(f"Victory! Generating proofs")
     prover = HamiltonianCycleProver(N, adj_matrix, graph_path)
     proofs = prover.generate_proofs(NUM_ROUNDS)
 
@@ -52,6 +58,7 @@ def send_victory(grid, path):
         url = f"http://127.0.0.1:{p}/verify"
         thread = threading.Thread(target=send_request, args=(p, data, url))
         thread.start()
+    event_queue.put(f"Sent victory to other players")
 
 
 def send_victory_thread(grid, path):
@@ -82,6 +89,7 @@ def verify():
             tester.loadProof(A, z, i)
         tester.prove_hamiltonian_cycle()
         print(f"Player {player} won!")
+        event_queue.put(f"Player {player} won!")
         return (
             jsonify({"status": "success", "message": "Hamiltonian cycle is verified"}),
             200,
@@ -102,7 +110,7 @@ def start():
     position = data["position"]
 
     try:
-        game = GridGame(send_victory_thread, grid, position, "north", None)
+        game = GridGame(send_victory_thread, grid, position, "north", None, event_queue)
 
         thread = Thread(
             target=game.run,

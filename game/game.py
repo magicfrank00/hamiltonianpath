@@ -1,3 +1,4 @@
+from queue import Queue
 import pygame
 import random
 import copy
@@ -12,6 +13,7 @@ class GridGame:
         entity_position,
         entity_direction,
         solution_path=None,  # Solution path added here
+        event_queue: Queue = Queue(),
         move_interval=30,
     ):
         pygame.init()
@@ -76,6 +78,8 @@ class GridGame:
         ]
         self.won = False
         self.set_checkpoint()
+        self.event_queue = event_queue
+        self.messages = []
 
     def restart_game(self):
         self.color = self.get_random_color()
@@ -217,11 +221,30 @@ class GridGame:
         self.draw_buttons()
 
     def display_game_over(self):
-        font = pygame.font.Font(None, 72)
+        font = pygame.font.Font(None, 60)
         text = font.render("Game Over! Press R to restart", True, (255, 0, 0))
         text_rect = text.get_rect(center=(self.width // 2, self.height // 2))
         self.screen.blit(text, text_rect)
         pygame.display.flip()
+
+    def process_event_queue(self):
+        while not self.event_queue.empty():
+            message = self.event_queue.get()
+            self.messages.append((message, pygame.time.get_ticks() + 3000))  # 3 seconds
+
+    def display_messages(self):
+        current_ticks = pygame.time.get_ticks()
+        self.messages = [
+            msg for msg in self.messages if msg[1] > current_ticks
+        ]  # Filter out expired messages
+
+        y_offset = 50  # Start 50 pixels down from the top
+        for message, _ in self.messages:
+            font = pygame.font.Font(None, 40)
+            text = font.render(message, True, (255, 255, 0))  # Yellow text
+            text_rect = text.get_rect(center=(self.width // 2, y_offset))
+            self.screen.blit(text, text_rect)
+            y_offset += 40
 
     def check_victory(self):
         for row in self.grid:
@@ -291,8 +314,10 @@ class GridGame:
         clock = pygame.time.Clock()
         self.draw_grid()
         while running:
+            self.process_event_queue()  # Process any new messages in the queue
             self.handle_input()
             self.draw_grid()
+            self.display_messages()
 
             if not self.game_over:
                 if self.autoplay:
